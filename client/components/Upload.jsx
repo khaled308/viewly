@@ -1,24 +1,56 @@
 "use client";
 
 import { useState } from "react";
-import { uploadFile } from "@/services/upload";
+import {
+  completeUpload,
+  initializeUpload,
+  uploadChunk,
+} from "@/services/upload";
+
+const CHUNK_SIZE = 1024 * 1024 * 5;
 
 export default function Upload() {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
 
+  const uploadInChunks = async (file, uploadId, totalChunks) => {
+    const parts = [];
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * CHUNK_SIZE;
+      const end = Math.min(file.size, start + CHUNK_SIZE);
+      const chunk = file.slice(start, end);
+
+      const formData = new FormData();
+      formData.append("chunk", chunk);
+      formData.append("chunkIndex", i + 1);
+      formData.append("totalChunks", totalChunks);
+      formData.append("fileName", file.name);
+      formData.append("uploadId", uploadId);
+
+      const data = await uploadChunk(formData);
+
+      parts.push({ PartNumber: data.PartNumber, ETag: `${data.ETag}` });
+    }
+    return parts;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     setUploading(true);
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
     try {
-      const response = await uploadFile(formData);
-      console.log(response);
+      const { uploadId } = await initializeUpload({ fileName: file.name });
+
+      const parts = await uploadInChunks(file, uploadId, totalChunks);
+      await completeUpload({
+        fileName: file.name,
+        uploadId: uploadId,
+        parts,
+      });
       setMessage("Uploaded!");
     } catch (err) {
       setMessage("Upload failed!");

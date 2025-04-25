@@ -1,17 +1,58 @@
-import { uploadToS3 } from "../services/uploadFile.js";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/async-handler.js";
+import {
+  completeS3MultipartUploadService,
+  initializeS3UploadMultiPartService,
+  uploadS3ChunkService,
+} from "../services/uploadS3.service.js";
 
-export const uploadFile = asyncHandler(async (req, res) => {
-  if (!req.file) {
-    throw new ApiError("No file uploaded", 400);
+export const initializeUpload = asyncHandler(async (req, res) => {
+  const { fileName } = req.body;
+
+  if (!fileName) {
+    throw new ApiError("Missing required fields", 400);
   }
 
-  const { originalname, buffer } = req.file;
+  const uploadId = await initializeS3UploadMultiPartService(fileName);
+  res.status(200).json({ uploadId });
+});
 
-  const s3Key = `nodejs/${Date.now()}_${originalname}`;
+export const uploadChunk = asyncHandler(async (req, res) => {
+  const { chunkIndex, fileName, uploadId } = req.body;
+  const chunk = req.file;
 
-  await uploadToS3(s3Key, buffer);
+  if (!chunk || !chunkIndex || !uploadId || !fileName) {
+    throw new ApiError("Missing required fields", 400);
+  }
+
+  const response = await uploadS3ChunkService({
+    key: fileName,
+    body: chunk.buffer,
+    uploadId: uploadId,
+    partNumber: +chunkIndex,
+  });
+
+  console.log(response);
+
+  res
+    .status(200)
+    .json({ success: true, ETag: response.ETag, PartNumber: +chunkIndex });
+});
+
+export const completeUpload = asyncHandler(async (req, res) => {
+  const { fileName, uploadId, parts } = req.body;
+
+  if (!fileName || !uploadId || !parts) {
+    throw new ApiError("Missing required fields", 400);
+  }
+
+  const response = await completeS3MultipartUploadService({
+    key: fileName,
+    uploadId: uploadId,
+    parts: parts.sort((a, b) => a.PartNumber - b.PartNumber),
+  });
+
+  console.log("complete", response);
 
   res.status(200).json({ message: "File uploaded successfully" });
 });
