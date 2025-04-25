@@ -16,6 +16,7 @@ export default function Upload() {
 
   const uploadInChunks = async (file, uploadId, totalChunks) => {
     const parts = [];
+    const promises = [];
     for (let i = 0; i < totalChunks; i++) {
       const start = i * CHUNK_SIZE;
       const end = Math.min(file.size, start + CHUNK_SIZE);
@@ -28,10 +29,14 @@ export default function Upload() {
       formData.append("fileName", file.name);
       formData.append("uploadId", uploadId);
 
-      const data = await uploadChunk(formData);
-
-      parts.push({ PartNumber: data.PartNumber, ETag: `${data.ETag}` });
+      const promise = uploadChunk(formData);
+      promises.push(promise);
     }
+
+    const responses = await Promise.all(promises);
+    responses.forEach((response) =>
+      parts.push({ PartNumber: response.PartNumber, ETag: `${response.ETag}` })
+    );
     return parts;
   };
 
