@@ -7,7 +7,7 @@ import {
   uploadChunk,
 } from "@/services/upload";
 
-const CHUNK_SIZE = 1024 * 1024 * 5;
+const CHUNK_SIZE = 1024 * 1024 * 20;
 
 export default function Upload() {
   const [file, setFile] = useState(null);
