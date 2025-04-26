@@ -5,6 +5,7 @@ import {
   initializeS3UploadMultiPartService,
   uploadS3ChunkService,
 } from "../services/uploadS3.service.js";
+import { addVideoDetails } from "../services/video.service.js";
 
 export const initializeUpload = asyncHandler(async (req, res) => {
   const { fileName } = req.body;
@@ -40,9 +41,9 @@ export const uploadChunk = asyncHandler(async (req, res) => {
 });
 
 export const completeUpload = asyncHandler(async (req, res) => {
-  const { fileName, uploadId, parts } = req.body;
+  const { fileName, uploadId, parts, title, description, author } = req.body;
 
-  if (!fileName || !uploadId || !parts) {
+  if (!fileName || !uploadId || !parts || !title || !author) {
     throw new ApiError("Missing required fields", 400);
   }
 
@@ -52,7 +53,12 @@ export const completeUpload = asyncHandler(async (req, res) => {
     parts: parts.sort((a, b) => a.PartNumber - b.PartNumber),
   });
 
-  console.log("complete", response);
+  await addVideoDetails({
+    title,
+    description,
+    author,
+    url: response.Location,
+  });
 
   res.status(200).json({ message: "File uploaded successfully" });
 });

@@ -24,6 +24,8 @@ export const generateSignedUrlService = async (key) => {
     const command = new GetObjectCommand({
       Bucket: AWS_BUCKET_NAME,
       Key: key,
+      ResponseContentType: "video/mp4",
+      ResponseContentDisposition: "inline",
     });
     const signedUrl = await getSignedUrl(s3Client, command, {
       expiresIn: 3600,

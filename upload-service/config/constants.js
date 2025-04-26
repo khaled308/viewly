@@ -10,3 +10,6 @@ export const AWS_REGION = process.env.AWS_REGION;
 export const AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 export const KAFKA_BROKERS = process.env.KAFKA_BROKERS?.split(",");
 export const FILE_PART_SIZE = process.env.FILE_PART_SIZE || 50 * 1024 * 1024;
+export const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  "postgres://postgres:postgres@localhost:5432/viewly";
