@@ -5,7 +5,10 @@ import {
   initializeS3UploadMultiPartService,
   uploadS3ChunkService,
 } from "../services/uploadS3.service.js";
-import { addVideoDetails } from "../services/video.service.js";
+import {
+  addVideoDetails,
+  pushVideoDetailsToKafka,
+} from "../services/video.service.js";
 
 export const initializeUpload = asyncHandler(async (req, res) => {
   const { fileName } = req.body;
@@ -59,6 +62,8 @@ export const completeUpload = asyncHandler(async (req, res) => {
     author,
     url: response.Location,
   });
+
+  pushVideoDetailsToKafka({ key: fileName, url: response.Location });
 
   res.status(200).json({ message: "File uploaded successfully" });
 });

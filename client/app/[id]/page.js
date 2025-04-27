@@ -1,18 +1,32 @@
 "use client";
 
-import ReactPlayer from "@/components/ReactPlayer";
+import { useEffect, useRef } from "react";
+import Hls from "hls.js";
 
 const VideoPage = () => {
+  const videoRef = useRef(null);
+  const src =
+    "https://khaledyassin-dev.s3.us-east-1.amazonaws.com/hls/lesson6_mp4_master.m3u8";
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (Hls.isSupported()) {
+      console.log("HLS is supported");
+      console.log(src);
+      const hls = new Hls();
+      hls.attachMedia(video);
+      hls.loadSource(src);
+    } else {
+      console.log("HLS is not supported");
+    }
+  }, [src]);
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
       <div className="w-full max-w-4xl rounded-lg overflow-hidden shadow-lg bg-gray-800 p-4">
         <div className="aspect-video">
-          <ReactPlayer
-            url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-            width="100%"
-            height="100%"
-            controls
-          />
+          <video ref={videoRef} controls className="w-full h-full" />
         </div>
       </div>
     </div>
